@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>TinyApp</title>
+</head>
+<body>
+    <header>
+        <% include ./partials/_header %>
+    </header>
+    Short URL: <%= [shortURL] %>
+    <form method="POST" action="/urls/<%=[short_url]%>/update">
+        <input type="text" name="updateLongURL">
+        <input type="submit" value="Submit">
+    </form>
+
+</body>
+</html>
