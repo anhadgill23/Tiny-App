@@ -1,1 +1,27 @@
-<center><b>TINY APP</b></center>
+<center>
+    <h1>TINY APP</h1>
+</center>
+<!-- <form method="POST" action="/login">
+    <input type="text" name="username">
+    <input type="submit" value="Submit">
+</form>
+<form method="POST" action="/logout">
+    <%= username %>
+    <input type="submit" value="Logout">
+</form> -->
+
+<% if(username){ %>
+
+    <h4><%= username %>
+        <form method="POST" action="/logout">
+        <input type="submit" value="Logout">
+        </form>
+    </h4>
+    <% } else{ %>
+    <h4><form method="POST" action="/login">
+        <input type="text" name="username">
+        <input type="submit" value="Submit">
+    </form>
+    <form method="POST" action="/logout">
+    </h4>
+ <% } %>
