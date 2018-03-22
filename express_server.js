@@ -35,12 +35,26 @@ function generateRandomString() {
     return Math.random().toString(36).substr(2, 6);
 }
 
+// Authenticate user
+function authenticateUser (email, password) {
+    if (email && password) {
+        for (userObject in users) {
+            if (email === users[userObject].email && password === users[userObject].password) {
+                return true;
+            }
+        }
+    } else {
+        res.status(400).send('Email or password cannot be empty. Please try again.');
+    }
+};
+
 // Home page
 app.get('/urls', (req, res) => {
    // console.log('username: ', req.cookies.username);
+   //console.log('users: ', users);
     let templateVars = {
         urls: urlDatabase,
-        user_id: users[user_id]
+        user_id: users[req.cookies.user_id]
     };
     res.render('urls_index', templateVars);
 });
@@ -48,7 +62,7 @@ app.get('/urls', (req, res) => {
 // Renders a new page to add a new URL
 app.get("/urls/new", (req, res) => {
     let templateVars = {
-        user_id: users[user_id]
+        user_id: users[req.cookies.user_id]
     }
     res.render("urls_new", templateVars);
 });
@@ -64,7 +78,7 @@ app.post("/urls", (req, res) => {
 app.get("/urls/:id", (req, res) => {
     let templateVars = {
         shortURL: req.params.id,
-        user_id: users[user_id]
+        user_id: users[req.cookies.user_id]
     };
     res.render("urls_show", templateVars);
   });
@@ -89,23 +103,19 @@ app.post('/urls/:id', (req, res) => {
 
 // Login check
 app.post('/login', (req, res) => {
-if (req.body.email && req.body.password) {
-    for (userObject in users) {
-        if (userObject.email === req.body.email && userObject.password === req.body.password) {
-            res.cookie('user_id', userObject.id);
-            res.redirect('/urls');
-        }
-        else if (userObject.email === req.body.email && userObject.password !== req.body.password){
-            res.status(403).send('Email or password do not match. Please try again.');
-        }
-        else {
-            res.status(403).send('This email cannot be found. Please try again.');
-        }
-    };
-}
-else {
-    res.status(400).send('Email or password cannot be empty. Please try again.');
-}
+    if (authenticateUser(req.body.email, req.body.password)) {
+        res.cookie('user_id', users[userObject].id);
+        res.redirect('/urls');
+    } else {
+        for (userObject in users) {
+            if (users[userObject].email === req.body.email && users[userObject].email !== req.body.password){
+                res.status(403).send('Email or password do not match. Please try again.');
+            }
+            else {
+                res.status(403).send('This email cannot be found. Please try again.');
+            }
+        };
+    }
 });
 
 // Logout
