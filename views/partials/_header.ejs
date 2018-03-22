@@ -1,27 +1,20 @@
 <center>
     <h1>TINY APP</h1>
 </center>
-<!-- <form method="POST" action="/login">
-    <input type="text" name="username">
-    <input type="submit" value="Submit">
-</form>
-<form method="POST" action="/logout">
-    <%= username %>
-    <input type="submit" value="Logout">
-</form> -->
-
-<% if(username){ %>
-
+<% if(user_id){ %>
     <h4><%= username %>
         <form method="POST" action="/logout">
         <input type="submit" value="Logout">
         </form>
     </h4>
     <% } else{ %>
-    <h4><form method="POST" action="/login">
-        <input type="text" name="username">
-        <input type="submit" value="Submit">
-    </form>
-    <form method="POST" action="/logout">
+    <h4>
+        Are you a member? <a href="/login">Login</a> <br>
+        Otherwise <a href="/register">Register</a>
     </h4>
  <% } %>
+
+
+ <!-- Modify your _header.ejs to display a "Register" link (pointing to the registration 
+    page) and a "Login" link (pointing to the login page) for users that are not logged in. 
+-->
