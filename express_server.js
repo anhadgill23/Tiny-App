@@ -6,29 +6,31 @@ const bodyParser = require("body-parser");
 
 var app = express();
 
+//Handles cookies
 app.use(cookieSession({
     name: 'session',
-    keys: ['ilovelhl'],
-    // cookie: { maxAge: 60000 }
+    keys: ['ilovelhl']
 }));
 
-// Registers the body parser middleware for processing forms
-app.use(bodyParser.urlencoded({extended: true}));
+// Handles body of forms submitted
+app.use(bodyParser.urlencoded({
+    extended: true
+}));
 
 // View engine
 app.set("view engine", "ejs")
 
-// Users' data object
+// Users' data
 const users = {
     "userRandomID": {
-      id: "userRandomID",
-      email: "user@example.com",
-      password: "purple-monkey-dinosaur"
+        id: "userRandomID",
+        email: "user@example.com",
+        password: "purple-monkey-dinosaur"
     },
-   "user2RandomID": {
-      id: "user2RandomID",
-      email: "user2@example.com",
-      password: "dishwasher-funk"
+    "user2RandomID": {
+        id: "user2RandomID",
+        email: "user2@example.com",
+        password: "dishwasher-funk"
     }
 };
 
@@ -36,10 +38,12 @@ const users = {
 var urlDatabase = {
     "b2xVn2": {
         id: 'userRandomID',
-        longURL: 'www.lighthouselab.com'},
+        longURL: 'www.lighthouselab.com'
+    },
     "9sm5xK": {
         id: 'user2RandomID',
-        longURL: 'http://www.google.com'}
+        longURL: 'http://www.google.com'
+    }
 }
 
 // Creates a random alphanumeric string
@@ -47,15 +51,19 @@ function generateRandomString() {
     return Math.random().toString(36).substr(2, 6);
 }
 
-// Authenticate user
-function authenticateUser (email, password) {
+// Authenticates user
+function authenticateUser(email, password) {
     var check = false;
-    for (userObject in users) {
-        if (email === users[userObject].email && bcrypt.compareSync(password, users[userObject].password)) {
-            check = true;
-        } else {
-            check = false;
+    if (email && password) {
+        for (userObject in users) {
+            if (email === users[userObject].email && bcrypt.compareSync(password, users[userObject].password)) {
+                check = true;
+            } else {
+                check = false;
+            }
         }
+    } else {
+        check = false;
     }
     return check;
 };
@@ -73,8 +81,7 @@ function urlsForUser(id) {
 
 // Home page
 app.get('/urls', (req, res) => {
-
-    if(req.session.user_id) {
+    if (req.session.user_id) {
         let templateVars = {
             urls: urlsForUser(req.session.user_id),
             user_id: users[req.session.user_id]
@@ -85,9 +92,9 @@ app.get('/urls', (req, res) => {
     }
 });
 
-// Renders a new page to add a new URL
+// Page to add a new URL
 app.get("/urls/new", (req, res) => {
-    if(req.session.user_id) {
+    if (req.session.user_id) {
         let templateVars = {
             user_id: users[req.session.user_id]
         }
@@ -96,7 +103,7 @@ app.get("/urls/new", (req, res) => {
     res.redirect('/login');
 });
 
-// Creates a random shortURL and assigns it to the long URL
+// Creates a random short URL and assigns it to the given URL
 app.post("/urls", (req, res) => {
     let random_short_url = generateRandomString()
     urlDatabase[random_short_url] = {
@@ -106,20 +113,24 @@ app.post("/urls", (req, res) => {
     res.redirect(`/urls/${random_short_url}`);
 });
 
-// Update URL page
+// Updates URL
 app.get("/urls/:id", (req, res) => {
-    if (urlDatabase[req.params.id].id === users[req.session.user_id].id){
-        let templateVars = {
-            shortURL: req.params.id,
-            user_id: users[req.session.user_id]
-        };
-        res.render("urls_show", templateVars);
+    if (urlDatabase[req.params.id]) {
+        if (urlDatabase[req.params.id].id === users[req.session.user_id].id) {
+            let templateVars = {
+                shortURL: req.params.id,
+                user_id: users[req.session.user_id]
+            };
+            res.render("urls_show", templateVars);
+        }  else {
+            res.status(403).send('Authorization denied.');
+        }
     } else {
-    res.status(403).send('Authorization denied.');
-}
+        res.status(404).send('Not found.')
+    }
 });
 
-// Redirects from shortURL to longURL
+// Short URL link that redirects to long URL
 app.get("/u/:shortURL", (req, res) => {
     let longURL = urlDatabase[req.params.shortURL].longURL;
     res.redirect(longURL);
@@ -127,19 +138,18 @@ app.get("/u/:shortURL", (req, res) => {
 
 // Deletes URL
 app.post('/urls/:id/delete', (req, res) => {
-    if (urlDatabase[req.params.id].id === users[req.session.user_id].id){
+    if (urlDatabase[req.params.id].id === users[req.session.user_id].id) {
         delete urlDatabase[req.params.id];
         res.redirect('/urls');
-    }
-    else {
+    } else {
         res.status(403).send('Authorization denied.');
     }
 });
 
 // Updates the longURL
 app.post('/urls/:id', (req, res) => {
-    urlDatabase[ req.params.id ] = {
-        id:users[req.session.user_id].id,
+    urlDatabase[req.params.id] = {
+        id: users[req.session.user_id].id,
         longURL: 'http://' + req.body.updatedLongURL
     };
     res.redirect('/urls');
@@ -147,24 +157,11 @@ app.post('/urls/:id', (req, res) => {
 
 // Login check
 app.post('/login', (req, res) => {
-    if (req.body.email && req.body.password) {
-        if (authenticateUser(req.body.email, req.body.password)) {
-            req.session.user_id = users[userObject].id;
-            res.redirect('/urls');
-
-        } else {
-            for (userObject in users) {
-                if (users[userObject].email === req.body.email && !bcrypt.compareSync(password, users[userObject].password)){
-                    res.status(403).send('Email or password do not match. Please try again.');
-                }
-                else {
-                    //might need to change this
-                    res.status(403).send('This email cannot be found. Please try again.');
-                }
-            };
-        }
+    if (authenticateUser(req.body.email, req.body.password)) {
+        req.session.user_id = users[userObject].id;
+        res.redirect('/urls');
     } else {
-        res.status(400).send('Email or password cannot be empty. Please try again.');
+        res.status(403).send('Please try again.');
     }
 });
 
@@ -174,9 +171,9 @@ app.post('/logout', (req, res) => {
     res.redirect('/urls');
 });
 
-// Renders a new registration page
+// Registration page
 app.get('/register', (req, res) => {
-res.render('register');
+    res.render('register');
 });
 
 // Performs error checks and registers the new user
@@ -204,7 +201,7 @@ app.post("/register", (req, res) => {
     }
 });
 
-// Renders a new login page
+// Login page
 app.get('/login', (req, res) => {
     res.render('login');
 });
