@@ -11,6 +11,8 @@ app.use(bodyParser.urlencoded({extended: true}));
 var cookieParser = require('cookie-parser')
 app.use(cookieParser());
 
+const bcrypt = require('bcrypt');
+
 // Users' data object
 const users = {
     "userRandomID": {
@@ -35,30 +37,21 @@ var urlDatabase = {
         longURL: 'http://www.google.com'}
 }
 
-// var urlDatabase = {
-//     "b2xVn2": "http://www.lighthouselabs.ca",
-//     "9sm5xK": "http://www.google.com"
-// };
-
-// creates a random alphanumeric string
+// Creates a random alphanumeric string
 function generateRandomString() {
     return Math.random().toString(36).substr(2, 6);
 }
 
 // Authenticate user
 function authenticateUser (email, password) {
-    if (email && password) {
-        for (userObject in users) {
-            if (email === users[userObject].email && password === users[userObject].password) {
-                return true;
-            }
+    for (userObject in users) {
+        if (email === users[userObject].email && bcrypt.compareSync(password, users[userObject].password)) {
+            return true;
         }
-    } else {
-        res.status(400).send('Email or password cannot be empty. Please try again.');
     }
 };
 
-
+// Finds URLs specific to the user
 function urlsForUser(id) {
     var userUrlDatabase = {};
     for (shortURL in urlDatabase) {
@@ -108,14 +101,13 @@ app.post("/urls", (req, res) => {
 
 // Update URL page
 app.get("/urls/:id", (req, res) => {
-if (urlDatabase[req.params.id].id === users[req.cookies.user_id].id){
-    let templateVars = {
-        shortURL: req.params.id,
-        user_id: users[req.cookies.user_id]
-    };
-    res.render("urls_show", templateVars);
-}
-else {
+    if (urlDatabase[req.params.id].id === users[req.cookies.user_id].id){
+        let templateVars = {
+            shortURL: req.params.id,
+            user_id: users[req.cookies.user_id]
+        };
+        res.render("urls_show", templateVars);
+    } else {
     res.status(403).send('Authorization denied.');
 }
 });
@@ -148,18 +140,22 @@ app.post('/urls/:id', (req, res) => {
 
 // Login check
 app.post('/login', (req, res) => {
-    if (authenticateUser(req.body.email, req.body.password)) {
-        res.cookie('user_id', users[userObject].id);
-        res.redirect('/urls');
+    if (req.body.email && req.body.password) {
+        if (authenticateUser(req.body.email, req.body.password)) {
+            res.cookie('user_id', users[userObject].id);
+            res.redirect('/urls');
+        } else {
+            for (userObject in users) {
+                if (users[userObject].email === req.body.email && !bcrypt.compareSync(password, users[userObject].password)){
+                    res.status(403).send('Email or password do not match. Please try again.');
+                }
+                else {
+                    res.status(403).send('This email cannot be found. Please try again.');
+                }
+            };
+        }
     } else {
-        for (userObject in users) {
-            if (users[userObject].email === req.body.email && users[userObject].email !== req.body.password){
-                res.status(403).send('Email or password do not match. Please try again.');
-            }
-            else {
-                res.status(403).send('This email cannot be found. Please try again.');
-            }
-        };
+        res.status(400).send('Email or password cannot be empty. Please try again.');
     }
 });
 
@@ -184,10 +180,13 @@ app.post("/register", (req, res) => {
         };
 
         let user_id = generateRandomString();
+        const password = req.body.password;
+        const hashedPassword = bcrypt.hashSync(password, 10);
+
         users[user_id] = {
         id: user_id,
         email: req.body.email,
-        password: req.body.password
+        password: hashedPassword
         }
 
         res.cookie('user_id', users[user_id].id);
