@@ -25,10 +25,20 @@ const users = {
     }
 }
 
+// URL database
 var urlDatabase = {
-    "b2xVn2": "http://www.lighthouselabs.ca",
-    "9sm5xK": "http://www.google.com"
-};
+    "b2xVn2": {
+        id: 'userRandomID',
+        longURL: 'www.lighthouselab.com'},
+    "9sm5xK": {
+        id: 'user2RandomID',
+        longURL: 'http://www.google.com'}
+}
+
+// var urlDatabase = {
+//     "b2xVn2": "http://www.lighthouselabs.ca",
+//     "9sm5xK": "http://www.google.com"
+// };
 
 // creates a random alphanumeric string
 function generateRandomString() {
@@ -48,56 +58,91 @@ function authenticateUser (email, password) {
     }
 };
 
+
+function urlsForUser(id) {
+    var userUrlDatabase = {};
+    for (shortURL in urlDatabase) {
+        if (urlDatabase[shortURL].id === id) {
+            userUrlDatabase[shortURL] = urlDatabase[shortURL].longURL
+        }
+    }
+    console.log('userUrlDatabase: ', userUrlDatabase);
+    return userUrlDatabase;
+}
+
 // Home page
 app.get('/urls', (req, res) => {
-   // console.log('username: ', req.cookies.username);
-   //console.log('users: ', users);
-    let templateVars = {
-        urls: urlDatabase,
-        user_id: users[req.cookies.user_id]
-    };
-    res.render('urls_index', templateVars);
+    if(req.cookies.user_id) {
+        let templateVars = {
+            urls: urlsForUser(req.cookies.user_id),
+            user_id: users[req.cookies.user_id]
+        };
+        res.render('urls_index', templateVars);
+    } else {
+        res.redirect('/login');
+    }
 });
 
 // Renders a new page to add a new URL
 app.get("/urls/new", (req, res) => {
-    let templateVars = {
-        user_id: users[req.cookies.user_id]
+    if(req.cookies.user_id) {
+        let templateVars = {
+            user_id: users[req.cookies.user_id]
+        }
+        res.render("urls_new", templateVars);
     }
-    res.render("urls_new", templateVars);
+    res.redirect('/login');
 });
 
 // Creates a random shortURL and assigns it to the long URL
 app.post("/urls", (req, res) => {
     let random_short_url = generateRandomString()
-    urlDatabase[random_short_url] = 'http://' + req.body.longURL
+    console.log('urlDatabase: ', urlDatabase);
+
+    urlDatabase[random_short_url] = {
+        id: users[req.cookies.user_id].id,
+        longURL: 'http://' + req.body.longURL
+    }
     res.redirect(`/urls/${random_short_url}`);
 });
 
 // Update URL page
 app.get("/urls/:id", (req, res) => {
+if (urlDatabase[req.params.id].id === users[req.cookies.user_id].id){
     let templateVars = {
         shortURL: req.params.id,
         user_id: users[req.cookies.user_id]
     };
     res.render("urls_show", templateVars);
-  });
+}
+else {
+    res.status(403).send('Authorization denied.');
+}
+});
 
 // Redirects from shortURL to longURL
 app.get("/u/:shortURL", (req, res) => {
-    let longURL = urlDatabase[req.params.shortURL];
+    let longURL = urlDatabase[req.params.shortURL].longURL;
     res.redirect(longURL);
 });
 
 // Deletes URL
 app.post('/urls/:id/delete', (req, res) => {
-    delete urlDatabase[req.params.id];
-    res.redirect('/urls');
+    if (urlDatabase[req.params.id].id === users[req.cookies.user_id].id){
+        delete urlDatabase[req.params.id];
+        res.redirect('/urls');
+    }
+    else {
+        res.status(403).send('Authorization denied.');
+    }
 });
 
 // Updates the longURL
 app.post('/urls/:id', (req, res) => {
-    urlDatabase[req.params.id] = req.body.updatedLongURL;
+    urlDatabase[ req.params.id ] = {
+        id:users[req.cookies.user_id].id,
+        longURL: 'http://' + req.body.updatedLongURL
+    };
     res.redirect('/urls');
 });
 
@@ -144,6 +189,7 @@ app.post("/register", (req, res) => {
         email: req.body.email,
         password: req.body.password
         }
+
         res.cookie('user_id', users[user_id].id);
         res.redirect('/urls');
     }
