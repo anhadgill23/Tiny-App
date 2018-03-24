@@ -2,7 +2,7 @@
 *This is the project for the second week of Lighthouse Labs*
 
 # Screenshot
-!["Screenshot of urls page"] (https://github.com/anhadgill23/Tiny-App/blob/master/docs/urls-page.png?raw=true)
+!["Screenshot of urls page"](https://github.com/anhadgill23/Tiny-App/blob/master/docs/urls-page.png?raw=true)
 
 ### Project Description
 
