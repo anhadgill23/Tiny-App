@@ -1,6 +1,9 @@
 # Tiny-App
 *This is the project for the second week of Lighthouse Labs*
 
+# Screenshot
+!["Screenshot of urls page"] (https://github.com/anhadgill23/Tiny-App/blob/master/docs/urls-page.png?raw=true)
+
 ### Project Description
 
 This three day project will have you building a web app using Node. The app will allow users to shorten long URLs much like the Google URL shortener.
